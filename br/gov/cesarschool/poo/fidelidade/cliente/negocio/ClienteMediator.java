@@ -71,7 +71,6 @@ public class ClienteMediator {
     }
 
     private String validar(Cliente cliente) {
-        // Validação do CPF
         String cpf = cliente.getCpf();
         if (StringUtil.ehNuloOuBranco(cpf) || !ValidadorCPF.ehCpfValido(cpf)) {
             return "CPF inválido.";
