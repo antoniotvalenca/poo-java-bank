@@ -1,10 +1,14 @@
 package br.gov.cesarschool.poo.fidelidade.cliente.entidade;
-import java.util.Date;
 
+import br.gov.cesarschool.poo.fidelidade.geral.entidade.Comparavel;
 import br.gov.cesarschool.poo.fidelidade.geral.entidade.Endereco;
 import br.gov.cesarschool.poo.fidelidade.geral.entidade.Sexo;
+import br.gov.cesarschool.poo.fidelidade.geral.entidade.Identificavel;
 
-public class Cliente {
+import java.util.Calendar;
+import java.util.Date;
+
+public class Cliente extends Identificavel implements Comparavel {
     private String cpf;
     private String nomeCompleto;
     private Sexo sexo;
@@ -29,36 +33,36 @@ public class Cliente {
         return nomeCompleto;
     }
 
-    public void setNomeCompleto(String nomeCompleto) {
-        this.nomeCompleto = nomeCompleto;
-    }
-
     public Sexo getSexo() {
         return sexo;
-    }
-
-    public void setSexo(Sexo sexo) {
-        this.sexo = sexo;
     }
 
     public Date getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(Date dataNascimento) {
-        this.dataNascimento = dataNascimento;
-    }
-
     public double getRenda() {
         return renda;
     }
 
-    public void setRenda(double renda) {
-        this.renda = renda;
-    }
-
     public Endereco getEndereco() {
         return endereco;
+    }
+
+    public void setNomeCompleto(String nomeCompleto) {
+        this.nomeCompleto = nomeCompleto;
+    }
+
+    public void setSexo(Sexo sexo) {
+        this.sexo = sexo;
+    }
+
+    public void setDataNascimento(Date dataNascimento) {
+        this.dataNascimento = dataNascimento;
+    }
+
+    public void setRenda(double renda) {
+        this.renda = renda;
     }
 
     public void setEndereco(Endereco endereco) {
@@ -66,9 +70,30 @@ public class Cliente {
     }
 
     public int obterIdade() {
-        Date dataAtual = new Date();
-        long diferencaEmMilissegundos = dataAtual.getTime() - this.dataNascimento.getTime();
-        long diferencaEmAnos = diferencaEmMilissegundos / (24 * 60 * 60 * 1000 * 365);
-        return (int) diferencaEmAnos;
+        Calendar hoje = Calendar.getInstance();
+        Calendar dataNascimento = Calendar.getInstance();
+        dataNascimento.setTime(this.dataNascimento);
+        int idade = hoje.get(Calendar.YEAR) - dataNascimento.get(Calendar.YEAR);
+        if (hoje.get(Calendar.MONTH) < dataNascimento.get(Calendar.MONTH)
+                || (hoje.get(Calendar.MONTH) == dataNascimento.get(Calendar.MONTH)
+                && hoje.get(Calendar.DAY_OF_MONTH) < dataNascimento.get(Calendar.DAY_OF_MONTH))) {
+            idade--;
+        }
+        return idade;
+    }
+
+    @Override
+    public String obterChave() {
+        return getCpf();
+    }
+
+    @Override
+    public int comparar(Comparavel outro) {
+        if (outro instanceof Cliente) {
+            Cliente outroCliente = (Cliente) outro;
+            return this.nomeCompleto.compareTo(outroCliente.nomeCompleto);
+        }
+        return 0;
     }
 }
+

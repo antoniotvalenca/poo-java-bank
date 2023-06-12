@@ -3,16 +3,29 @@ package br.gov.cesarschool.poo.fidelidade.cartao.negocio;
 import br.gov.cesarschool.poo.fidelidade.cartao.dao.CartaoFidelidadeDAO;
 import br.gov.cesarschool.poo.fidelidade.cartao.dao.LancamentoExtratoDAO;
 import br.gov.cesarschool.poo.fidelidade.cartao.entidade.CartaoFidelidade;
-import br.gov.cesarschool.poo.fidelidade.cliente.entidade.Cliente;
+import br.gov.cesarschool.poo.fidelidade.cartao.entidade.LancamentoExtrato;
 import br.gov.cesarschool.poo.fidelidade.cartao.entidade.LancamentoExtratoPontuacao;
-import br.gov.cesarschool.poo.fidelidade.cartao.entidade.TipoResgate;
 import br.gov.cesarschool.poo.fidelidade.cartao.entidade.LancamentoExtratoResgate;
+import br.gov.cesarschool.poo.fidelidade.cartao.entidade.RetornoConsultaExtrato;
+import br.gov.cesarschool.poo.fidelidade.cartao.entidade.TipoResgate;
+import br.gov.cesarschool.poo.fidelidade.cliente.entidade.Cliente;
+import br.gov.cesarschool.poo.fidelidade.util.ValidadorCPF;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Date;
 
 public class CartaoFidelidadeMediator {
+
+    private static final String ERRO_AO_INCLUIR_LANCAMENTO = "Erro ao incluir lançamento";
+    private static final String ERRO_NA_ALTERACAO_DO_CARTAO = "Erro na alteração do cartão";
+    private static final String CARTAO_INEXISTENTE = "Cartão não existe";
+    private static final String QUANTIDADE_DE_PONTOS_MENOR_QUE_ZERO = "Quantidade de pontos menor que zero";
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+
     private static CartaoFidelidadeMediator instance;
+
     private CartaoFidelidadeDAO repositorioCartao;
     private LancamentoExtratoDAO repositorioLancamento;
 
@@ -28,49 +41,83 @@ public class CartaoFidelidadeMediator {
         return instance;
     }
 
-    public long gerarCartao(Cliente cliente) {
-        String numeroCartao = cliente.getCpf() + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        long numeroCartaoLong = Long.parseLong(numeroCartao); // Converter String para long
-        CartaoFidelidade cartao = new CartaoFidelidade(numeroCartaoLong);
-        boolean incluido = repositorioCartao.incluir(cartao);
-        if (incluido) {
-            return cartao.getNumero();
+    public String gerarCartao(Cliente cliente) {
+        String cpf = cliente.getCpf();
+        if (!ValidadorCPF.ehCpfValido(cpf)) {
+            return "";
+        }
+
+        String cpfSemDigitosVerificadores = cpf.substring(0, cpf.length() - 2);
+        String cartao = cpfSemDigitosVerificadores + DATE_FORMAT.format(new Date());
+        CartaoFidelidade cardinhu = new CartaoFidelidade(cartao);
+        repositorioCartao.incluir(cardinhu);
+        return cartao;
+    }
+
+    private String processarAlteracaoCartaoInclusaoLancamento(CartaoFidelidade cardinhu, int qtdPontos, TipoResgate tipo) {
+        boolean res = repositorioCartao.alterar(cardinhu);
+        if (!res) {
+            return ERRO_NA_ALTERACAO_DO_CARTAO;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LancamentoExtrato extrato;
+       
+        if (tipo == null) {
+            extrato = new LancamentoExtratoPontuacao(String.valueOf(cardinhu.getNumeroFidelidade()), qtdPontos, now);
         } else {
-            return 0;
+            extrato = new LancamentoExtratoResgate(String.valueOf(cardinhu.getNumeroFidelidade()), qtdPontos, now, tipo);
         }
-    }
-    
-
-    public String pontuar(long numeroCartao, double quantidadePontos) {
-        if (quantidadePontos <= 0) {
-            return "Quantidade de pontos inválida.";
+        res = repositorioLancamento.incluir(extrato);
+        if (!res) {
+            return ERRO_AO_INCLUIR_LANCAMENTO;
         }
-        CartaoFidelidade cartao = repositorioCartao.buscar(numeroCartao);
-        if (cartao == null) {
-            return "Cartão não encontrado.";
-        }
-        cartao.creditar(quantidadePontos);
-        repositorioCartao.alterar(cartao);
-        LancamentoExtratoPontuacao lancamento = new LancamentoExtratoPontuacao(numeroCartao, (int) quantidadePontos, LocalDateTime.now());
-        repositorioLancamento.incluir(lancamento);
         return null;
     }
 
-    public String resgatar(long numeroCartao, double quantidadePontos, TipoResgate tipo) {
-        if (quantidadePontos <= 0) {
-            return "Quantidade de pontos inválida.";
+    public String pontuar(String numeroCartao, int qtdPontos) {
+        if (qtdPontos <= 0) {
+            return QUANTIDADE_DE_PONTOS_MENOR_QUE_ZERO;
         }
-        CartaoFidelidade cartao = repositorioCartao.buscar(numeroCartao);
-        if (cartao == null) {
-            return "Cartão não encontrado.";
+        CartaoFidelidade cardinhu = repositorioCartao.buscar(numeroCartao);
+        if (cardinhu == null) {
+            return CARTAO_INEXISTENTE;
         }
-        if (cartao.getSaldo() < quantidadePontos) {
-            return "Saldo insuficiente para resgate.";
+        cardinhu.creditar(qtdPontos);
+        return processarAlteracaoCartaoInclusaoLancamento(cardinhu, qtdPontos, null);
+    }
+
+    public String resgatar(String numeroCartao, int qtdPontos, TipoResgate tipo) {
+        if (qtdPontos <= 0) {
+            return QUANTIDADE_DE_PONTOS_MENOR_QUE_ZERO;
         }
-        cartao.debitar(quantidadePontos);
-        repositorioCartao.alterar(cartao);
-        LancamentoExtratoResgate lancamento = new LancamentoExtratoResgate(numeroCartao, (int) quantidadePontos, LocalDateTime.now(), tipo);
-        repositorioLancamento.incluir(lancamento);
-        return null;
+        CartaoFidelidade cardinhu = repositorioCartao.buscar(numeroCartao);
+        if (cardinhu == null) {
+            return CARTAO_INEXISTENTE;
+        }
+        if (cardinhu.getSaldo() < qtdPontos) {
+            return "Saldo insuficiente para realizar o resgate.";
+        }
+        cardinhu.debitar(qtdPontos);
+        return processarAlteracaoCartaoInclusaoLancamento(cardinhu, qtdPontos, tipo);
+    }
+
+    public CartaoFidelidade buscarCartao(String numeroCartao) {
+        return repositorioCartao.buscar(numeroCartao);
+    }
+
+    public RetornoConsultaExtrato consultaEntreDatas(String numeroCartao, LocalDateTime inicio, LocalDateTime fim) {
+        if (ValidadorCPF.ehCpfValido(numeroCartao) && inicio != null && (fim == null || fim.isAfter(inicio))) {
+            LancamentoExtrato[] lancamentos = repositorioLancamento.buscarTodos();
+            lancamentos = Arrays.stream(lancamentos)
+                    .filter(l -> l.getNumeroCartao().equals(numeroCartao))
+                    .filter(l -> l.getDataHoraLancamento().isAfter(inicio))
+                    .filter(l -> fim == null || l.getDataHoraLancamento().isBefore(fim))
+                    .sorted((l1, l2) -> l2.getDataHoraLancamento().compareTo(l1.getDataHoraLancamento()))
+                    .toArray(LancamentoExtrato[]::new);
+
+            return new RetornoConsultaExtrato(lancamentos, null);
+        } else {
+            return new RetornoConsultaExtrato(null, "Parâmetros inválidos para consulta de extrato");
+        }
     }
 }

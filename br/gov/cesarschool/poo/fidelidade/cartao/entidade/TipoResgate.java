@@ -1,23 +1,25 @@
 package br.gov.cesarschool.poo.fidelidade.cartao.entidade;
 
-public enum TipoResgate {
-    PRODUTO(1, "produto"),
-    SERVICO(2, "serviço"),
-    VIAGEM(3, "viagem");
+import java.io.Serializable;
 
-    private int codigo;
-    private String descricao;
+public enum TipoResgate implements Serializable {
+	PRODUTO(1, "PRODUTO"),
+	SERVICO(2, "SERVICO"),
+	VIAGEM(3, "VIAGEM");
+	
+	private int codigo;
+	private String descricao;
 
-    TipoResgate(int codigo, String descricao) {
-        this.codigo = codigo;
-        this.descricao = descricao;
-    }
+	private TipoResgate(int codigo, String descricao) {
+	    this.codigo = codigo;
+	    this.descricao = descricao;
+	}
 
-    public int getCodigo() {
-        return codigo;
-    }
+	public int getCodigo() {
+	    return codigo;
+	}
 
-    public String getDescricao() {
-        return descricao;
-    }
+	public String getDescricao() {
+	    return descricao;
+	}
 }

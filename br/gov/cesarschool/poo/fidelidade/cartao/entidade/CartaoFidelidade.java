@@ -1,37 +1,43 @@
 package br.gov.cesarschool.poo.fidelidade.cartao.entidade;
+
+import br.gov.cesarschool.poo.fidelidade.geral.entidade.Identificavel;
+
 import java.util.Date;
 
-public class CartaoFidelidade {
-    private long numero;
-    private double saldo;
-    private Date dataHoraAtualizacao;
+public class CartaoFidelidade extends Identificavel {
 
-    public CartaoFidelidade(long numero) {
-        this.numero = numero;
-        this.saldo = 0;
-        this.dataHoraAtualizacao = new Date();
-    }
+	private String numero;
+	private double saldo;
+	private Date dataHoraAtualizacao = new Date();
 
-    // Métodos Getters
-    public long getNumero() {
-        return numero;
-    }
+	public CartaoFidelidade(String numero) {
+		this.numero = numero;
+	}
 
-    public double getSaldo() {
-        return saldo;
-    }
+	public String getNumeroFidelidade() {
+		return numero;
+	}
 
-    public Date getDataHoraAtualizacao() {
-        return dataHoraAtualizacao;
-    }
+	public double getSaldo() {
+		return saldo;
+	}
 
-    public void creditar(double valor) {
-        saldo += valor;
-        dataHoraAtualizacao = new Date();
-    }
+	public Date getDataHoraAtualizacao() {
+		return dataHoraAtualizacao;
+	}
 
-    public void debitar(double valor) {
-        saldo -= valor;
-        dataHoraAtualizacao = new Date();
-    }
+	public void creditar(double valor) {
+		saldo += valor;
+		dataHoraAtualizacao = new Date();
+	}
+
+	public void debitar(double valor) {
+		saldo -= valor;
+		dataHoraAtualizacao = new Date();
+	}
+
+	@Override
+	public String obterChave() {
+		return numero; // Utilizando o número do cartão como chave de identificação
+	}
 }
